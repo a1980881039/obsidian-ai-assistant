@@ -1,0 +1,329 @@
+.gz-ai-chat-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.gz-ai-chat-root {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	position: relative;
+	--chat-popup-radius: 14px;
+	--chat-popup-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+	--chat-popup-border: 1px solid var(--background-modifier-border);
+}
+
+
+
+/* ── Input Footer / Bottom Section ── */
+
+.gz-ai-chat-bottom-section {
+	position: relative;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 0 8px 8px;
+	overflow: visible;
+}
+
+
+
+
+
+
+
+/* ── Unified Input Card ── */
+
+.gz-ai-chat-unified-input {
+	display: flex;
+	flex-direction: column;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 14px;
+	padding: 0;
+	gap: 0;
+	overflow: visible;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gz-ai-chat-unified-input:focus-within {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 72, 120, 220), 0.12);
+}
+
+/* ── Input Footer (send button row inside card) ── */
+
+.gz-ai-chat-input-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	padding: 0 8px 6px;
+}
+
+/* ── Toolbar Row (above input card, outside) ── */
+
+.gz-ai-chat-toolbar-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0 2px;
+	gap: 2px;
+}
+
+.gz-ai-chat-toolbar-left {
+	display: flex;
+	align-items: center;
+	gap: 0;
+	flex: 1;
+	min-width: 0;
+}
+
+.gz-ai-chat-toolbar-right {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.gz-ai-chat-toolbar-btn {
+	width: 28px;
+	height: 28px;
+	padding: 6px;
+	border-radius: 8px;
+	color: var(--text-faint);
+	transition: color 0.15s, background 0.15s;
+}
+
+.gz-ai-chat-toolbar-btn:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.gz-ai-chat-toolbar-btn-active {
+	color: var(--interactive-accent) !important;
+	background: rgba(var(--interactive-accent-rgb, 72, 120, 220), 0.1);
+}
+
+.gz-ai-chat-toolbar-sep {
+	width: 1px;
+	height: 14px;
+	background: var(--background-modifier-border);
+	margin: 0 4px;
+	flex-shrink: 0;
+	opacity: 0.6;
+}
+
+
+
+.gz-ai-chat-model-picker-wrapper {
+	position: relative;
+}
+
+.gz-ai-chat-root .gz-ai-chat-model-picker-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 10px;
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	border-radius: 8px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	cursor: pointer;
+	transition: background 0.15s, color 0.15s;
+	max-width: 140px;
+}
+
+.gz-ai-chat-root .gz-ai-chat-model-picker-trigger:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.gz-ai-chat-model-picker-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gz-ai-chat-model-picker-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 200;
+}
+
+.gz-ai-chat-model-picker-menu {
+	position: absolute;
+	bottom: calc(100% + 6px);
+	left: 0;
+	min-width: 180px;
+	max-width: 260px;
+	max-height: 280px;
+	overflow-y: auto;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);
+	z-index: 210;
+	padding: 4px;
+	animation: gz-picker-appear 0.15s ease-out;
+}
+
+@keyframes gz-picker-appear {
+	from { opacity: 0; transform: translateY(4px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+.gz-ai-chat-model-picker-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	width: 100%;
+	padding: 7px 10px;
+	border: none;
+	background: transparent;
+	color: var(--text-normal);
+	cursor: pointer;
+	border-radius: 8px;
+	font-size: var(--font-ui-small);
+	text-align: left;
+	transition: background 0.1s;
+}
+
+.gz-ai-chat-model-picker-item:hover {
+	background: var(--background-modifier-hover);
+}
+
+.gz-ai-chat-model-picker-item-active {
+	color: var(--interactive-accent);
+	font-weight: 500;
+}
+
+.gz-ai-chat-icon-sm {
+	width: 24px;
+	height: 24px;
+	padding: 4px;
+}
+
+/* ── Circular Send / Stop Button ── */
+
+.gz-ai-chat-send-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	flex-shrink: 0;
+	transition: opacity 0.15s, transform 0.1s;
+}
+
+.gz-ai-chat-send-btn:hover {
+	opacity: 0.85;
+}
+
+.gz-ai-chat-send-btn:active {
+	opacity: 0.7;
+}
+
+.gz-ai-chat-send-btn:disabled {
+	opacity: 0.25;
+	cursor: default;
+	transform: none;
+}
+
+.gz-ai-chat-stop-btn {
+	background: var(--text-error);
+}
+
+/* ── Quick Ask (inline editor) ── */
+
+.gz-ai-chat-quick-ask {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-top: 4px;
+	padding: 4px 6px;
+	background: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	z-index: var(--layer-popover);
+}
+
+.gz-ai-chat-quick-ask-input {
+	width: 260px;
+	padding: 3px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	outline: none;
+}
+
+.gz-ai-chat-quick-ask-input:focus {
+	border-color: var(--interactive-accent);
+}
+
+.gz-ai-chat-quick-ask-btn {
+	padding: 3px 10px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+
+.gz-ai-chat-quick-ask-btn:hover {
+	opacity: 0.9;
+}
+
+.gz-ai-chat-quick-ask-close {
+	padding: 2px 4px;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 16px;
+	line-height: 1;
+}
+
+/* ── CSS Tooltip ── */
+
+.gz-ai-chat-root [data-tooltip] {
+	position: relative;
+}
+
+.gz-ai-chat-root [data-tooltip]::after {
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 4px 8px;
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-normal);
+	white-space: nowrap;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.15s;
+	z-index: 100;
+}
+
+.gz-ai-chat-root [data-tooltip]:hover::after {
+	opacity: 1;
+}

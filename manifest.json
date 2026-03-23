@@ -1,0 +1,10 @@
+{
+	"id": "ai-assistant",
+	"name": "AI Assistant",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "AI chat & agent workflow plugin: multi-model chat, vault QA, agent orchestration on canvas.",
+	"author": "User",
+	"authorUrl": "",
+	"isDesktopOnly": false
+}
