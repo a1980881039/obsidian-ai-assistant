@@ -1,5 +1,5 @@
 import { BaseChainRunner, type ChainRunnerCallbacks } from "./BaseChainRunner";
-import { AI_SENDER, type ReasoningStep } from "../types";
+import { AI_SENDER, type ReasoningStep, type ImageAttachment } from "../types";
 import { DEFAULT_SYSTEM_PROMPT, generateMessageId } from "../constants";
 import type { ToolRegistry } from "../tools/ToolRegistry";
 import {
@@ -33,6 +33,7 @@ export class AgentChainRunner extends BaseChainRunner {
 	private toolRegistry: ToolRegistry;
 	private contextPrompt: string;
 	private customSystemPrompt: string;
+	private images: ImageAttachment[] | undefined;
 
 	constructor(
 		...args: [
@@ -40,12 +41,14 @@ export class AgentChainRunner extends BaseChainRunner {
 			ToolRegistry,
 			string?,
 			string?,
+			ImageAttachment[]?,
 		]
 	) {
 		super(args[0], args[1], args[2]);
 		this.toolRegistry = args[3];
 		this.contextPrompt = args[4] || "";
 		this.customSystemPrompt = args[5] || "";
+		this.images = args[6];
 	}
 
 	async run(
@@ -87,8 +90,26 @@ export class AgentChainRunner extends BaseChainRunner {
 			for (const h of history) {
 				messages.push(h.role === "user" ? new HumanMessage(h.content) : new AIMessage(h.content));
 			}
+
+			// 确保当前用户消息在 messages 中，并在有图片时构建多模态消息
 			const lastH = history[history.length - 1];
-			if (!lastH || lastH.content !== userMessage || lastH.role !== "user") {
+			const isCurrentMsgInHistory = lastH?.content === userMessage && lastH?.role === "user";
+			if (this.images && this.images.length > 0) {
+				const multimodalMsg = new HumanMessage({
+					content: [
+						{ type: "text", text: userMessage },
+						...this.images.map(img => ({
+							type: "image_url" as const,
+							image_url: { url: img.data },
+						})),
+					],
+				});
+				if (isCurrentMsgInHistory) {
+					messages[messages.length - 1] = multimodalMsg;
+				} else {
+					messages.push(multimodalMsg);
+				}
+			} else if (!isCurrentMsgInHistory) {
 				messages.push(new HumanMessage(userMessage));
 			}
 

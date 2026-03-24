@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { App, TFile } from "obsidian";
-	import type { ChatMessage, CustomModel, UserSystemPrompt, SessionOverrides } from "../types";
+	import type { ChatMessage, CustomModel, UserSystemPrompt, SessionOverrides, ImageAttachment } from "../types";
 	import { getModelKey, getFirstEnabledModelConfigId } from "../types";
 	import type { ChatManager } from "../core/ChatManager";
 	import type { ContextItem } from "../types";
@@ -284,13 +284,14 @@
 		}));
 	}
 
-	async function handleSend(text: string) {
+	async function handleSend(text: string, structured?: { images?: ImageAttachment[] }) {
 		const items = contextItems.length > 0 ? contextItems.map(c => {
 			const mapped: { path: string; displayName: string; type: string; selectionContent?: string } = { path: c.path, displayName: c.displayName, type: c.type };
 			if (c.selectionContent) mapped.selectionContent = c.selectionContent;
 			return mapped;
 		}) : undefined;
-		await mgr().sendMessage(text, selectedModelKey, items);
+		const images = structured?.images?.length ? structured.images : undefined;
+		await mgr().sendMessage(text, selectedModelKey, items, images);
 	}
 	function handleStop() { mgr().stopGeneration(); }
 
@@ -318,8 +319,11 @@
 	}
 
 	async function handleDeleteChat(file: TFile) {
-		await mgr().deleteChatHistory(file);
-		await refreshHistory();
+		historyState = {
+			...historyState,
+			items: historyState.items.filter(i => i.file.path !== file.path),
+		};
+		mgr().deleteChatHistory(file).catch(console.error);
 	}
 
 	async function handleRenameChat(file: TFile, newTopic: string) {

@@ -59,6 +59,9 @@ export const DEFAULT_AI_CHAT_SETTINGS: AIChatSettings = {
 
 	// History (Phase 11)
 	chatHistorySortStrategy: "recent",
+
+	// Internal migration tracker
+	migrationVersion: 0,
 };
 
 export const VIEW_TYPE_AI_CHAT = "ai-chat-view";

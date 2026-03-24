@@ -122,6 +122,9 @@ export interface AIChatSettings {
 
 	// History (Phase 11)
 	chatHistorySortStrategy: "recent" | "created" | "name";
+
+	// Internal migration tracker
+	migrationVersion: number;
 }
 
 export const USER_SENDER = "user";

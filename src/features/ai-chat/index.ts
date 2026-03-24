@@ -8,6 +8,7 @@ import { renderAIChatSettings } from "./settings";
 import { createQuickAskExtension, showQuickAskEffect } from "./editor/quickAskExtension";
 import { EditorView } from "@codemirror/view";
 import { getFirstEnabledModelKey, getFirstEnabledModelConfigId } from "./types";
+import type { ChatEngineAPI } from "./ChatEngineAPI";
 
 /**
  * AI Chat 功能模块。
@@ -20,9 +21,17 @@ export class AIChatFeature implements Feature {
 	private editorIntegration!: EditorIntegration;
 	private autoIndexTimer: ReturnType<typeof setTimeout> | null = null;
 
+	/** 公共 API — 供 ai-agent 等外部 Feature 使用 */
+	getChatEngine(): ChatEngineAPI {
+		return this.chatManager;
+	}
+
 	load(plugin: SuperPlugin): void {
 		this.plugin = plugin;
 		this.chatManager = new ChatManager(plugin.app, plugin.settings.aiChat);
+
+		// 一次性迁移：转义聊天文件中的 wiki-links，防止污染链接图谱
+		this.runMigrations();
 
 		// Listen for settings changes
 		plugin.onSettingsChange(() => {
@@ -268,5 +277,31 @@ export class AIChatFeature implements Feature {
 		}
 		// Legacy fallback
 		return getFirstEnabledModelKey(settings.activeModels);
+	}
+
+	/**
+	 * 运行一次性数据迁移（不阻塞插件加载，后台执行）。
+	 * 通过 settings.migrationVersion 追踪已完成的迁移。
+	 */
+	private runMigrations(): void {
+		const settings = this.plugin.settings.aiChat;
+		const CURRENT_VERSION = 1; // 每新增迁移 +1
+
+		if ((settings.migrationVersion ?? 0) >= CURRENT_VERSION) return;
+
+		// 后台执行，不阻塞 onload
+		(async () => {
+			try {
+				// Migration 1: 转义聊天文件中的 wiki-links
+				if ((settings.migrationVersion ?? 0) < 1) {
+					await this.chatManager.persistence.migrateEscapeWikiLinks();
+				}
+
+				settings.migrationVersion = CURRENT_VERSION;
+				await this.plugin.saveSettings();
+			} catch (e) {
+				console.error("[AI Chat] Migration failed:", e);
+			}
+		})();
 	}
 }

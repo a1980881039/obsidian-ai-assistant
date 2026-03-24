@@ -156,12 +156,7 @@ export class AIAgentFeature implements Feature {
 			return;
 		}
 
-		// 通过 AIChatFeature 获取 ChatManager 的公开属性
-		const chatManager = (aiChat as any).chatManager;
-		if (!chatManager) {
-			new Notice("ChatManager 未初始化");
-			return;
-		}
+		const chatEngine = aiChat.getChatEngine();
 
 		const settings = this.plugin.settings.aiChat;
 		new Notice("开始执行工作流...");
@@ -170,8 +165,8 @@ export class AIAgentFeature implements Feature {
 			await this.workflowRunner.runWorkflow(
 				file,
 				input,
-				chatManager.chatModelManager,
-				chatManager.toolRegistry,
+				chatEngine.chatModelManager,
+				chatEngine.toolRegistry,
 				{
 					agentMaxIterations: settings.agentMaxIterations || 10,
 					contextTurns: settings.contextTurns || 10,

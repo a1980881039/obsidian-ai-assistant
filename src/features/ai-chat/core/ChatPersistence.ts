@@ -1,6 +1,7 @@
 import type { App, TFile, TFolder } from "obsidian";
 import { USER_SENDER, AI_SENDER, type ChatMessage } from "../types";
 import { AI_ROOT_FOLDER, CHAT_FOLDER, generateMessageId } from "../constants";
+
 const FRONTMATTER_SEPARATOR = "---";
 const MSG_SEPARATOR = "<!-- MSG_SEP -->";
 
@@ -234,12 +235,25 @@ export class ChatPersistence {
 		for (const msg of messages) {
 			if (!msg.isVisible) continue;
 			const sender = msg.sender === USER_SENDER ? "**user**" : "**ai**";
-			lines.push(`${sender}: ${msg.message}`);
+			lines.push(`${sender}: ${ChatPersistence.escapeWikiLinks(msg.message)}`);
 			lines.push(`[Timestamp: ${msg.timestamp}]`);
 			lines.push(MSG_SEPARATOR);
 		}
 
 		return lines.join("\n");
+	}
+
+	/**
+	 * 转义 wiki-link / embed 语法，防止 Obsidian metadataCache 将
+	 * 聊天文件索引为真实链接，污染链接图谱。
+	 */
+	private static escapeWikiLinks(text: string): string {
+		return text.replace(/(!?)\[\[/g, "$1\\[\\[").replace(/\]\]/g, "\\]\\]");
+	}
+
+	/** 反序列化时还原被转义的 wiki-link */
+	private static unescapeWikiLinks(text: string): string {
+		return text.replace(/(!?)\\?\[\\?\[/g, "$1[[").replace(/\\?\]\\?\]/g, "]]");
 	}
 
 	/** 反序列化 Markdown 为消息 */
@@ -286,7 +300,7 @@ export class ChatPersistence {
 				if (content) {
 					messages.push({
 						id: generateMessageId(),
-						message: content,
+						message: ChatPersistence.unescapeWikiLinks(content),
 						sender,
 						timestamp,
 						isVisible: true,
@@ -303,7 +317,7 @@ export class ChatPersistence {
 				const sender = senderMatch[1] === "user" ? USER_SENDER : AI_SENDER;
 				messages.push({
 					id: generateMessageId(),
-					message: senderMatch[2].trim(),
+					message: ChatPersistence.unescapeWikiLinks(senderMatch[2].trim()),
 					sender,
 					timestamp: new Date().toISOString(),
 					isVisible: true,
@@ -312,5 +326,39 @@ export class ChatPersistence {
 		}
 
 		return { messages, modelKey };
+	}
+
+	/**
+	 * 迁移所有已有聊天文件：转义正文中的 wiki-link / embed 语法，
+	 * 使 Obsidian 不再将聊天文件索引为真实链接。
+	 * 只处理 frontmatter 之后的正文部分，避免破坏元数据。
+	 */
+	async migrateEscapeWikiLinks(): Promise<void> {
+		const folder = this.app.vault.getAbstractFileByPath(CHAT_FOLDER);
+		if (!folder || !("children" in folder)) return;
+
+		for (const child of (folder as TFolder).children) {
+			if (!(child instanceof Object) || !("extension" in child)) continue;
+			const file = child as TFile;
+			if (file.extension !== "md") continue;
+
+			const raw = await this.app.vault.read(file);
+
+			// 分离 frontmatter 和正文
+			const fmEnd = raw.match(/^---\r?\n[\s\S]*?\r?\n---/);
+			if (!fmEnd) continue; // 无 frontmatter 则跳过
+
+			const header = fmEnd[0];
+			const body = raw.slice(header.length);
+
+			// 仅当正文包含未转义的 [[ 或 ]] 时才处理
+			if (!/(?<!\\)\[\[|(?<!\\)\]\]/.test(body)) continue;
+
+			const escapedBody = body
+				.replace(/(?<!\\)(!?)\[\[/g, "$1\\[\\[")
+				.replace(/(?<!\\)\]\]/g, "\\]\\]");
+
+			await this.app.vault.modify(file, header + escapedBody);
+		}
 	}
 }
