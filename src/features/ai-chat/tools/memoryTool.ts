@@ -12,8 +12,12 @@ export function createMemoryTools(memoryManager: UserMemoryManager): ToolDefInpu
 			memory: z.string().describe("The fact or preference to remember"),
 		}),
 		func: async ({ memory }: any) => {
-			await memoryManager.addMemory(memory);
-			return `Saved to memory: ${memory}`;
+			try {
+				await memoryManager.addMemory(memory);
+				return `Saved to memory: ${memory}`;
+			} catch (err) {
+				return `Failed to save memory: ${err instanceof Error ? err.message : String(err)}`;
+			}
 		},
 	} as any);
 

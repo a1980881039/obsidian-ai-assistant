@@ -101,6 +101,7 @@ export async function decryptKey(encryptedText: string): Promise<string> {
 		return new TextDecoder().decode(decrypted);
 	} catch {
 		// If decryption fails, return as-is (might be plain text)
+		console.warn("[AI Chat] API key 解密失败，可能需要重新输入密钥");
 		return encryptedText;
 	}
 }

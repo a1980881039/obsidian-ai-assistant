@@ -25,6 +25,10 @@ export class ChatSessionManager {
 
 	/** 新建对话 */
 	async newChat(): Promise<void> {
+		if (this.autoSaveTimer) {
+			clearTimeout(this.autoSaveTimer);
+			this.autoSaveTimer = null;
+		}
 		this.messageRepo.clear();
 		this.currentChatFile = null;
 		this.notifyMessagesChanged();

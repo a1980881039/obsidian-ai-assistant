@@ -1,5 +1,7 @@
 /** AI Agent 综合体 — 类型定义 */
 
+import { AI_DATA_FOLDER } from "../../shared/utils";
+
 /** 智能体模板 */
 export interface AgentTemplate {
 	id: string;
@@ -82,6 +84,6 @@ export interface AIAgentSettings {
 
 export const DEFAULT_AI_AGENT_SETTINGS: AIAgentSettings = {
 	enabled: true,
-	templateStorePath: "Super Enhance/AI Data/agent-templates.json",
+	templateStorePath: `${AI_DATA_FOLDER}/agent-templates.json`,
 	defaultWorkflowMaxSteps: 20,
 };

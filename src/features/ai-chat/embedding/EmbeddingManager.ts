@@ -86,21 +86,20 @@ export class EmbeddingManager {
 	}
 
 	private async embedGoogle(texts: string[], model: string, apiKey: string): Promise<number[][]> {
-		const results: number[][] = [];
 		try {
-			await Promise.all(texts.map(async (text) => {
+			const results = await Promise.all(texts.map(async (text) => {
 				const resp = await requestUrl({
 					url: `https://generativelanguage.googleapis.com/v1/models/${model}:embedContent?key=${apiKey}`,
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ content: { parts: [{ text }] } }),
 				});
-				results.push(resp.json.embedding.values);
+				return resp.json.embedding.values as number[];
 			}));
+			if (results.length > 0) this.dimensions = results[0].length;
+			return results;
 		} catch (e) {
 			throw new Error(`Google embedding 请求失败: ${e instanceof Error ? e.message : e}`);
 		}
-		if (results.length > 0) this.dimensions = results[0].length;
-		return results;
 	}
 }

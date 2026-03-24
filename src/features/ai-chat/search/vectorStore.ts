@@ -128,7 +128,7 @@ export class VectorStore {
 			const data = JSON.parse(raw);
 			await this.initialize();
 			load(this.db!, data);
-			return true;
+			return this.getDocCount() > 0;
 		} catch {
 			return false;
 		}

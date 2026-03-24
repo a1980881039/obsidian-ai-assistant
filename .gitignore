@@ -11,3 +11,5 @@ Thumbs.db
 !.env.example
 .obsidian/
 记录问题.md
+main.js
+styles.css

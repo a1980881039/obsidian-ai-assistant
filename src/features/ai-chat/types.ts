@@ -214,10 +214,7 @@ export function getLinkedModels(configs: ModelConfig[], providerId: string): Mod
 	return configs.filter((m) => m.providerId === providerId);
 }
 
-/** 生成唯一 ID */
-export function generateId(prefix = "id"): string {
-	return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
+export { generateId } from "../../shared/utils";
 
 /** Agent 推理步骤 (Phase 3) */
 export interface ReasoningStep {
