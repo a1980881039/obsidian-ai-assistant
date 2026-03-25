@@ -140,6 +140,7 @@ export interface ChatMessage {
 	reasoningSteps?: ReasoningStep[];
 	citations?: CitationSource[];
 	contextItems?: { path: string; displayName: string; type: string }[];
+	images?: ImageAttachment[];
 }
 
 export interface StoredMessage {
@@ -151,6 +152,7 @@ export interface StoredMessage {
 	isErrorMessage?: boolean;
 	reasoningSteps?: ReasoningStep[];
 	citations?: CitationSource[];
+	images?: ImageAttachment[];
 }
 
 /** Context item for chat input */

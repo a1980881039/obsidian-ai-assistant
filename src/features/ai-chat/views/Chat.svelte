@@ -77,8 +77,12 @@
 		}
 		if (selectionDismissed) return;
 
+		// 获取选中文本的来源文件路径
+		const sourceFile = app.workspace.getActiveFile();
+		const sourcePath = sourceFile?.path ?? "selection";
+
 		const preview = sel.replace(/\n/g, " ").slice(0, 20) + (sel.length > 20 ? "…" : "");
-		const item: ContextItem = { type: "selection", path: "selection", displayName: preview, selectionContent: sel };
+		const item: ContextItem = { type: "selection", path: sourcePath, displayName: preview, selectionContent: sel };
 		const oldIdx = contextItems.findIndex(c => c.type === "selection");
 		if (oldIdx >= 0) {
 			if (contextItems[oldIdx].selectionContent === sel) return;
@@ -291,6 +295,12 @@
 			return mapped;
 		}) : undefined;
 		const images = structured?.images?.length ? structured.images : undefined;
+
+		// 发送后清除上下文 pills，避免每轮重复发送
+		contextItems = [];
+		selectionDismissed = false;
+		lastSelectionContent = "";
+
 		await mgr().sendMessage(text, selectedModelKey, items, images);
 	}
 	function handleStop() { mgr().stopGeneration(); }

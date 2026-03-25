@@ -39,10 +39,19 @@
 		message.message.replace(/<think>[\s\S]*?<\/think>/g, "").trim()
 	);
 
+	/** 将 AI 返回的 LaTeX 格式转为 Obsidian 支持的格式 */
+	function convertLatex(text: string): string {
+		// \[...\] → $$...$$（块级公式）
+		// \(...\) → $...$（行内公式）
+		return text
+			.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$')
+			.replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$');
+	}
+
 	// Render markdown when content changes
 	$effect(() => {
 		if (!contentEl || message.isErrorMessage || isUser) return;
-		const text = displayText;
+		const text = convertLatex(displayText);
 		const component = new Component();
 		component.load();
 		contentEl.empty();
@@ -109,6 +118,13 @@
 				</div>
 			</div>
 		{:else if isUser}
+			{#if message.images && message.images.length > 0}
+				<div class="gz-ai-chat-message-images">
+					{#each message.images as img}
+						<img class="gz-ai-chat-message-image" src={img.data} alt={img.name} title={img.name} />
+					{/each}
+				</div>
+			{/if}
 			<div class="gz-ai-chat-message-text">{@html renderUserMessage(message.message)}</div>
 		{:else if isCompactSummary}
 			<details class="gz-ai-chat-compact-summary">

@@ -86,14 +86,66 @@ function createLocalSearchTool(app: App): ToolDefInput {
 	);
 }
 
+/** 图片扩展名 → MIME 类型映射 */
+const IMAGE_MIME_MAP: Record<string, string> = {
+	png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
+	gif: "image/gif", webp: "image/webp", svg: "image/svg+xml",
+	bmp: "image/bmp", ico: "image/x-icon", tiff: "image/tiff", tif: "image/tiff",
+};
+
+/** 不可读取的二进制文件扩展名 */
+const BINARY_EXTENSIONS = new Set([
+	"mp3", "wav", "ogg", "flac", "m4a", "aac",
+	"mp4", "webm", "mkv", "avi", "mov",
+	"pdf", "zip", "rar", "7z", "gz", "tar",
+	"doc", "docx", "xls", "xlsx", "ppt", "pptx",
+]);
+
+/** 将 ArrayBuffer 转为 base64 字符串 */
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+	const bytes = new Uint8Array(buffer);
+	let binary = "";
+	for (let i = 0; i < bytes.byteLength; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary);
+}
+
+/**
+ * 图片工具结果前缀。AgentChainRunner 识别此前缀后
+ * 构造多模态 ToolMessage，让模型真正「看到」图片。
+ */
+export const IMAGE_RESULT_PREFIX = "__IMAGE__";
+
 function createReadNoteTool(app: App): ToolDefInput {
 	return makeTool(
 		"read_note",
-		"Read the full content of a note by its file path.",
-		z.object({ path: z.string().describe("The file path, e.g. 'folder/note.md'") }),
+		"Read the full content of a file by its path. Supports text notes and image files (png, jpg, gif, webp, etc.).",
+		z.object({ path: z.string().describe("The file path, e.g. 'folder/note.md' or 'attachments/photo.png'") }),
 		async ({ path }) => {
 			const file = app.vault.getAbstractFileByPath(path);
 			if (!file || !("stat" in file)) return `File not found: ${path}`;
+
+			const ext = (file as TFile).extension.toLowerCase();
+			const mimeType = IMAGE_MIME_MAP[ext];
+
+			// 图片文件 → 返回特殊标记，由 AgentChainRunner 转为多模态消息
+			if (mimeType) {
+				try {
+					const binary = await app.vault.readBinary(file as TFile);
+					const base64 = arrayBufferToBase64(binary);
+					return `${IMAGE_RESULT_PREFIX}${mimeType}__${base64}`;
+				} catch {
+					return `Failed to read image: ${path}`;
+				}
+			}
+
+			// 其他二进制文件 → 返回描述
+			if (BINARY_EXTENSIONS.has(ext)) {
+				return `Binary file (${ext}): ${path} — cannot be read as text.`;
+			}
+
+			// 文本文件 → 正常读取
 			const content = await app.vault.read(file as TFile);
 			return content.length > 8000 ? content.slice(0, 8000) + "\n\n...(truncated)" : content;
 		},

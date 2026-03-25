@@ -115,7 +115,7 @@ export class ChatManager implements ChatEngineAPI {
 		const contextPrompt = this.contextService.formatContextForPrompt(context);
 
 		// 2. 记录用户消息
-		this.messageService.addUserMessage(text, contextItems);
+		this.messageService.addUserMessage(text, contextItems, images);
 		this.callbacks?.onLoadingChanged(true);
 
 		// 3. 初始化模型

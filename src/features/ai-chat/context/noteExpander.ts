@@ -1,10 +1,29 @@
-import type { App } from "obsidian";
+import type { App, TFile } from "obsidian";
 
 const MAX_DEPTH = 3;
+
+/** 不可作为文本读取的二进制/媒体文件扩展名 */
+const BINARY_EXTENSIONS = new Set([
+	"png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tiff", "tif",
+	"mp3", "wav", "ogg", "flac", "m4a", "aac",
+	"mp4", "webm", "mkv", "avi", "mov",
+	"pdf", "zip", "rar", "7z", "gz", "tar",
+	"doc", "docx", "xls", "xlsx", "ppt", "pptx",
+]);
+
+/** 图片扩展名（占位符中区分 image vs generic file） */
+const IMAGE_EXTENSIONS = new Set([
+	"png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tiff", "tif",
+]);
+
+function isBinaryFile(file: TFile): boolean {
+	return BINARY_EXTENSIONS.has(file.extension.toLowerCase());
+}
 
 /**
  * 递归展开 ![[note]] / ![[note#heading]] / ![[note^blockid]] 嵌入。
  * 最大深度 3，循环引用检测。
+ * 二进制文件（图片、PDF 等）不读取内容，替换为描述性占位符。
  */
 export async function expandNoteContent(
 	app: App,
@@ -43,6 +62,14 @@ export async function expandNoteContent(
 		const file = app.metadataCache.getFirstLinkpathDest(noteName, "");
 		if (!file) {
 			replacements.push({ full, replacement: full });
+			continue;
+		}
+
+		// 二进制文件（图片、PDF 等）不读取内容，替换为描述性占位符（含完整路径供 AI 调工具读取）
+		if (isBinaryFile(file)) {
+			const isImage = IMAGE_EXTENSIONS.has(file.extension.toLowerCase());
+			const label = isImage ? "Embedded image" : "Embedded file";
+			replacements.push({ full, replacement: `[${label}: ${file.name} (path: ${file.path})]` });
 			continue;
 		}
 

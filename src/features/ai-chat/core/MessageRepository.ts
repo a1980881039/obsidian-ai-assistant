@@ -1,4 +1,4 @@
-import { USER_SENDER, AI_SENDER, type ChatMessage, type StoredMessage, type ReasoningStep, type CitationSource } from "../types";
+import { USER_SENDER, AI_SENDER, type ChatMessage, type StoredMessage, type ReasoningStep, type CitationSource, type ImageAttachment } from "../types";
 import { generateMessageId } from "../constants";
 
 /**
@@ -20,6 +20,7 @@ export class MessageRepository {
 		contextItems?: { path: string; displayName: string; type: string }[];
 		reasoningSteps?: ReasoningStep[];
 		citations?: CitationSource[];
+		images?: ImageAttachment[];
 	}): string {
 		const id = opts?.id || generateMessageId();
 		const message: StoredMessage & { contextItems?: { path: string; displayName: string; type: string }[] } = {
@@ -32,6 +33,7 @@ export class MessageRepository {
 			reasoningSteps: opts?.reasoningSteps,
 			citations: opts?.citations,
 			contextItems: opts?.contextItems,
+			images: opts?.images,
 		};
 		this.messages.push(message);
 		this.invalidateCache();
@@ -82,6 +84,7 @@ export class MessageRepository {
 				reasoningSteps: m.reasoningSteps,
 				citations: m.citations,
 				contextItems: m.contextItems,
+				images: m.images,
 			}));
 		return this.displayCache;
 	}

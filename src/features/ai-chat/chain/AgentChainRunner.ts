@@ -2,6 +2,7 @@ import { BaseChainRunner, type ChainRunnerCallbacks } from "./BaseChainRunner";
 import { AI_SENDER, type ReasoningStep, type ImageAttachment } from "../types";
 import { DEFAULT_SYSTEM_PROMPT, generateMessageId } from "../constants";
 import type { ToolRegistry } from "../tools/ToolRegistry";
+import { IMAGE_RESULT_PREFIX } from "../tools/builtinTools";
 import {
 	HumanMessage,
 	AIMessage,
@@ -81,9 +82,6 @@ export class AgentChainRunner extends BaseChainRunner {
 
 			let systemPrompt = (this.customSystemPrompt || DEFAULT_SYSTEM_PROMPT) + AGENT_SYSTEM_SUFFIX;
 			systemPrompt += buildToolListPrompt(this.toolRegistry);
-			if (this.contextPrompt) {
-				systemPrompt += "\n\n" + this.contextPrompt;
-			}
 
 			const messages: BaseMessage[] = [new SystemMessage(systemPrompt)];
 			const history = this.messageRepo.getHistoryMessages(this.settings.contextTurns);
@@ -91,26 +89,30 @@ export class AgentChainRunner extends BaseChainRunner {
 				messages.push(h.role === "user" ? new HumanMessage(h.content) : new AIMessage(h.content));
 			}
 
-			// 确保当前用户消息在 messages 中，并在有图片时构建多模态消息
+			// 如果当前消息已被包含在历史中，先移除（稍后重新添加含上下文的版本）
 			const lastH = history[history.length - 1];
-			const isCurrentMsgInHistory = lastH?.content === userMessage && lastH?.role === "user";
+			if (lastH?.content === userMessage && lastH?.role === "user") {
+				messages.pop();
+			}
+
+			// 将上下文拼入当前用户消息（而非系统提示词），避免每轮重复发送
+			const userText = this.contextPrompt
+				? `${this.contextPrompt}\n\n${userMessage}`
+				: userMessage;
+
+			// 始终添加完整的用户消息（含上下文 + 图片）
 			if (this.images && this.images.length > 0) {
-				const multimodalMsg = new HumanMessage({
+				messages.push(new HumanMessage({
 					content: [
-						{ type: "text", text: userMessage },
+						{ type: "text", text: userText },
 						...this.images.map(img => ({
 							type: "image_url" as const,
 							image_url: { url: img.data },
 						})),
 					],
-				});
-				if (isCurrentMsgInHistory) {
-					messages[messages.length - 1] = multimodalMsg;
-				} else {
-					messages.push(multimodalMsg);
-				}
-			} else if (!isCurrentMsgInHistory) {
-				messages.push(new HumanMessage(userMessage));
+				}));
+			} else {
+				messages.push(new HumanMessage(userText));
 			}
 
 			let fullText = "";
@@ -153,6 +155,35 @@ export class AgentChainRunner extends BaseChainRunner {
 					try {
 						const result = await toolDef.tool.invoke(tc.args);
 						const resultStr = typeof result === "string" ? result : JSON.stringify(result);
+
+						// 检测图片结果 → 构造多模态 ToolMessage
+						if (typeof resultStr === "string" && resultStr.startsWith(IMAGE_RESULT_PREFIX)) {
+							const separatorIdx = resultStr.indexOf("__", IMAGE_RESULT_PREFIX.length);
+							if (separatorIdx > 0) {
+								const mimeType = resultStr.slice(IMAGE_RESULT_PREFIX.length, separatorIdx);
+								const base64 = resultStr.slice(separatorIdx + 2);
+								const dataUrl = `data:${mimeType};base64,${base64}`;
+								messages.push(new ToolMessage({
+									tool_call_id: tc.id || tc.name,
+									content: [
+										{ type: "text", text: `Image loaded: ${(tc.args as Record<string, unknown>).path ?? tc.name}` },
+										{ type: "image_url", image_url: { url: dataUrl } },
+									],
+								}));
+
+								const resultStep: ReasoningStep = {
+									type: "tool_result",
+									toolName: tc.name,
+									result: `[Image loaded successfully]`,
+									durationMs: Date.now() - startMs,
+								};
+								reasoningSteps.push(step, resultStep);
+								callbacks.onReasoningStep?.(resultStep);
+								callbacks.onToolResult?.(tc.name, "[Image]");
+								continue;
+							}
+						}
+
 						messages.push(new ToolMessage({ tool_call_id: tc.id || tc.name, content: resultStr }));
 
 						const resultStep: ReasoningStep = {

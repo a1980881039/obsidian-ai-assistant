@@ -1403,6 +1403,23 @@
 	font-size: var(--font-text-size);
 }
 
+/* ── Message Images ── */
+
+.gz-ai-chat-message-images {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 8px;
+}
+
+.gz-ai-chat-message-image {
+	max-width: 200px;
+	max-height: 200px;
+	border-radius: 8px;
+	object-fit: cover;
+	cursor: pointer;
+}
+
 .gz-ai-chat-message-error .gz-ai-chat-message-content {
 	color: var(--text-error);
 }
@@ -2168,8 +2185,10 @@
 }
 
 .gz-ai-chat-context-pill-icon {
-	font-size: 10px;
-	line-height: 1;
+	width: 12px;
+	height: 12px;
+	flex-shrink: 0;
+	opacity: 0.7;
 }
 
 .gz-ai-chat-context-pill-remove {

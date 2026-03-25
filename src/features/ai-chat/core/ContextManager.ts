@@ -72,7 +72,7 @@ export class ContextManager {
 		for (const item of items) {
 			if (item.type === "selection") {
 				if (item.selectionContent) {
-					results.push({ path: "selection", type: "selection", content: item.selectionContent });
+					results.push({ path: item.path, type: "selection", content: item.selectionContent });
 				}
 				continue;
 			}
@@ -124,7 +124,8 @@ export class ContextManager {
 			if (item.type === "folder") {
 				parts.push(`<context_folder path="${item.path}">\n${item.content}\n</context_folder>`);
 			} else if (item.type === "selection") {
-				parts.push(`<selected_text>\n${item.content}\n</selected_text>`);
+				const pathAttr = item.path && item.path !== "selection" ? ` source="${item.path}"` : "";
+				parts.push(`<selected_text${pathAttr}>\n${item.content}\n</selected_text>`);
 			} else {
 				parts.push(`<context_note path="${item.path}">\n${item.content}\n</context_note>`);
 			}

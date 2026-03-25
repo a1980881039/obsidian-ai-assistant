@@ -11,7 +11,7 @@ import { ChatPersistence } from "../core/ChatPersistence";
 import { AutoCompactor } from "../core/AutoCompactor";
 import type { CustomCommandManager } from "../prompts/customCommands";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { USER_SENDER, AI_SENDER, type AIChatSettings, type ChatMessage } from "../types";
+import { USER_SENDER, AI_SENDER, type AIChatSettings, type ChatMessage, type ImageAttachment } from "../types";
 
 export class MessageService {
 	readonly messageRepo: MessageRepository;
@@ -38,8 +38,8 @@ export class MessageService {
 
 	// ── 消息操作 ──
 
-	addUserMessage(text: string, contextItems?: { path: string; displayName: string; type: string }[]): void {
-		this.messageRepo.addMessage(text, USER_SENDER, { contextItems });
+	addUserMessage(text: string, contextItems?: { path: string; displayName: string; type: string }[], images?: ImageAttachment[]): void {
+		this.messageRepo.addMessage(text, USER_SENDER, { contextItems, images });
 		this.notifyMessagesChanged();
 	}
 
