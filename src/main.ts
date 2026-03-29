@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS } from "./defaults";
 import { AISettingTab } from "./settings";
 import type { Feature } from "./features/Feature";
 import { applyMigration } from "./features/ai-chat/providers/settingsMigration";
+import { initSecretService } from "./features/ai-chat/providers/encryptionService";
 
 // Feature imports
 import { AIChatFeature } from "./features/ai-chat/index";
@@ -15,6 +16,7 @@ export default class AIPlugin extends Plugin {
 	private features: Feature[] = [];
 
 	async onload() {
+		initSecretService(this.app);
 		await this.loadSettings();
 
 		this.features = [

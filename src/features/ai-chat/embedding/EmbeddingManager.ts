@@ -1,5 +1,5 @@
 import { EmbeddingProvider, type AIChatSettings } from "../types";
-import { decryptKey } from "../providers/encryptionService";
+import { resolveSecret } from "../providers/encryptionService";
 import { requestUrl } from "obsidian";
 
 /**
@@ -34,7 +34,7 @@ export class EmbeddingManager {
 		const provider = this.settings.embeddingProvider;
 		const model = this.settings.embeddingModel;
 		const apiKey = this.settings.embeddingApiKey
-			? await decryptKey(this.settings.embeddingApiKey)
+			? resolveSecret(this.settings.embeddingApiKey)
 			: "";
 
 		switch (provider) {

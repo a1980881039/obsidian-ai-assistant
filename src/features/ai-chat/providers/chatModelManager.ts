@@ -12,7 +12,7 @@ import {
 	getFirstEnabledModelConfigId,
 } from "../types";
 import { CHAT_PROVIDER_CONSTRUCTORS, PROVIDER_REQUIRES_KEY } from "./providerConfig";
-import { decryptKey } from "./encryptionService";
+import { resolveSecret } from "./encryptionService";
 
 /**
  * LLM 提供商统一管理器。
@@ -70,8 +70,8 @@ export class ChatModelManager {
 		await this.setChatModel(model);
 	}
 
-	private async getApiKey(modelApiKey?: string): Promise<string> {
-		if (modelApiKey) return await decryptKey(modelApiKey);
+	private getApiKey(modelApiKey?: string): string {
+		if (modelApiKey) return resolveSecret(modelApiKey);
 		return "";
 	}
 
@@ -84,7 +84,7 @@ export class ChatModelManager {
 
 		// 优先使用 Provider 的 apiKey，回退到 ModelConfig 自身
 		const rawKey = provider?.apiKey || mc.apiKey || "";
-		const apiKey = await decryptKey(rawKey);
+		const apiKey = resolveSecret(rawKey);
 		const requiresKey = PROVIDER_REQUIRES_KEY[mc.provider] !== false;
 		if (!apiKey && requiresKey) {
 			throw new Error(`API key not configured for ${mc.provider}. Please set it in settings.`);

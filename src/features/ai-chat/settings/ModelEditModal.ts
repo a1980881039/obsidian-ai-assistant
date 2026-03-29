@@ -4,7 +4,7 @@ import type { AIChatSettings, ModelConfig } from "../types";
 import { PROVIDER_META } from "../providers/providerConfig";
 import { testModelConnection } from "../providers/modelTester";
 import { findProvider } from "../types";
-import { decryptKey } from "../providers/encryptionService";
+
 
 /**
  * ModelConfig 编辑弹窗。

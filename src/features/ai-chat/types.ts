@@ -36,7 +36,7 @@ export interface Provider {
 	name: string;
 	type: ChatModelProvider;
 	baseUrl: string;
-	apiKey: string; // 加密存储
+	apiKey: string; // SecretStorage 中的密钥名称
 	stream: boolean;
 	createdAt: number;
 	updatedAt: number;
@@ -49,7 +49,7 @@ export interface ModelConfig {
 	model: string; // 实际模型 ID（如 gpt-4o）
 	provider: ChatModelProvider;
 	baseUrl: string;
-	apiKey: string; // 加密存储
+	apiKey: string; // SecretStorage 中的密钥名称（可选覆盖）
 	enabled: boolean;
 	capabilities: ModelCapabilities;
 	providerId?: string; // 软链接到 Provider

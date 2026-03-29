@@ -1,4 +1,4 @@
-import { Notice, Setting, setIcon, setTooltip } from "obsidian";
+import { Notice, Setting, SecretComponent, setIcon, setTooltip } from "obsidian";
 import type SuperPlugin from "../../../main";
 import {
 	ChatModelProvider,
@@ -11,7 +11,7 @@ import { PROVIDER_META, PROVIDER_PRESETS } from "../providers/providerConfig";
 import { detectCapabilities } from "../providers/modelCapabilities";
 import { fetchAvailableModels } from "../providers/modelFetcher";
 import { testAllModels, type TestResult } from "../providers/modelTester";
-import { encryptKey, decryptKey, isEncrypted } from "../providers/encryptionService";
+import { resolveSecret } from "../providers/encryptionService";
 import { ModelEditModal } from "./ModelEditModal";
 import type { SettingsRenderContext } from "../../Feature";
 
@@ -143,19 +143,40 @@ function renderProviderDetail(
 	provider: Provider,
 	refreshAll: () => void,
 ): void {
-	// ── 标题 + 保存 ──
+	// ── 标题 ──
 	const titleRow = container.createDiv({ cls: "gz-detail-title-row" });
-	titleRow.createEl("h3", { text: provider.name || "(未命名)", cls: "gz-detail-title" });
-	const saveProviderBtn = titleRow.createEl("button", { text: "保存", cls: "gz-detail-save-btn" });
+	const titleEl = titleRow.createEl("h3", { text: provider.name || "(未命名)", cls: "gz-detail-title" });
 
-	// ── Provider 表单 ──
-	const form = container.createDiv({ cls: "gz-detail-form" });
+	// ── 自动保存辅助 ──
+	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+	const autoSave = (immediate = false) => {
+		if (saveTimer) clearTimeout(saveTimer);
+		const doSave = async () => {
+			provider.name = nameInput.value.trim();
+			provider.type = typeSelect.value as ChatModelProvider;
+			provider.apiKey = pendingSecretName;
+			provider.baseUrl = baseUrlInput.value.trim() || PROVIDER_PRESETS[provider.type] || "";
+			provider.stream = streamToggle.hasClass("is-enabled");
+			provider.updatedAt = Date.now();
+			await plugin.saveSettings();
+			titleEl.textContent = provider.name || "(未命名)";
+		};
+		if (immediate) { doSave(); } else { saveTimer = setTimeout(doSave, 500); }
+	};
+
+	// ── 连接配置（可折叠）──
+	const formDetails = container.createEl("details", { cls: "gz-detail-section" });
+	formDetails.open = !provider.apiKey; // 未配置密钥时默认展开
+	const formSummary = formDetails.createEl("summary", { cls: "gz-detail-section-summary" });
+	formSummary.createEl("span", { text: "连接配置" });
+	const form = formDetails.createDiv({ cls: "gz-detail-form" });
 
 	// 名称
 	const nameRow = form.createDiv({ cls: "gz-detail-field" });
 	nameRow.createEl("label", { text: "提供商名称", cls: "gz-detail-label" });
 	const nameInput = nameRow.createEl("input", { cls: "gz-detail-input", type: "text", placeholder: "My Provider" });
 	nameInput.value = provider.name;
+	nameInput.addEventListener("input", () => autoSave());
 
 	// 类型
 	const typeRow = form.createDiv({ cls: "gz-detail-field" });
@@ -170,38 +191,17 @@ function renderProviderDetail(
 		if (preset && !baseUrlInput.value) {
 			baseUrlInput.value = preset;
 		}
+		autoSave(true);
 	});
 
-	// API Key
+	// API Key (SecretComponent)
 	const keyRow = form.createDiv({ cls: "gz-detail-field" });
 	keyRow.createEl("label", { text: "API 密钥", cls: "gz-detail-label" });
 	const keyWrap = keyRow.createDiv({ cls: "gz-detail-key-wrap" });
-	const keyInput = keyWrap.createEl("input", { cls: "gz-detail-input gz-apikey-input", type: "password", placeholder: "sk-..." });
-	const keyToggle = keyWrap.createEl("button", { cls: "gz-apikey-toggle" });
-	setIcon(keyToggle, "eye");
-
-	// 处理加密 key 显示
-	const encKey = provider.apiKey || "";
-	const encrypted = isEncrypted(encKey);
-	let plainMask = "••••••••";
-	let plainKey = "";
-	if (encrypted) {
-		decryptKey(encKey).then((k) => { plainKey = k; plainMask = "•".repeat(k.length); keyInput.value = plainMask; });
-	} else {
-		plainKey = encKey;
-		keyInput.value = encKey;
-	}
-	keyToggle.addEventListener("click", (e) => {
-		e.preventDefault();
-		const show = keyInput.type === "password";
-		if (show && encrypted && keyInput.value === plainMask) {
-			keyInput.value = plainKey;
-		} else if (!show && encrypted) {
-			keyInput.value = plainMask;
-		}
-		keyInput.type = show ? "text" : "password";
-		setIcon(keyToggle, show ? "eye-off" : "eye");
-	});
+	let pendingSecretName = provider.apiKey || "";
+	new SecretComponent(plugin.app, keyWrap)
+		.setValue(pendingSecretName)
+		.onChange((value: string) => { pendingSecretName = value; autoSave(true); });
 
 	// Base URL
 	const urlRow = form.createDiv({ cls: "gz-detail-field" });
@@ -209,6 +209,7 @@ function renderProviderDetail(
 	const preset = PROVIDER_PRESETS[provider.type] || "";
 	const baseUrlInput = urlRow.createEl("input", { cls: "gz-detail-input", type: "text", placeholder: preset || "https://..." });
 	baseUrlInput.value = provider.baseUrl;
+	baseUrlInput.addEventListener("input", () => autoSave());
 
 	// 流式输出
 	const streamRow = form.createDiv({ cls: "gz-detail-field gz-detail-field-inline" });
@@ -217,35 +218,18 @@ function renderProviderDetail(
 	if (provider.stream) streamToggle.addClass("is-enabled");
 	streamToggle.addEventListener("click", () => {
 		streamToggle.toggleClass("is-enabled", !streamToggle.hasClass("is-enabled"));
+		autoSave(true);
 	});
 
-	// 保存按钮逻辑
-	saveProviderBtn.addEventListener("click", async () => {
-		const name = nameInput.value.trim();
-		if (!name) { new Notice("请填写 Provider 名称"); return; }
-		provider.name = name;
-		provider.type = typeSelect.value as ChatModelProvider;
-
-		// API Key - 如果用户修改了就重新加密
-		const rawKey = keyInput.value;
-		if (rawKey && rawKey !== plainMask) {
-			provider.apiKey = await encryptKey(rawKey);
-		}
-
-		provider.baseUrl = baseUrlInput.value.trim() || PROVIDER_PRESETS[provider.type] || "";
-		provider.stream = streamToggle.hasClass("is-enabled");
-		provider.updatedAt = Date.now();
-		await plugin.saveSettings();
-		new Notice("已保存");
-		refreshAll();
-	});
-
-	// ── 模型区域 ──
-	const modelSection = container.createDiv({ cls: "gz-detail-model-section" });
-	const modelHeader = modelSection.createDiv({ cls: "gz-detail-model-header" });
-
+	// ── 模型区域（可折叠）──
+	const modelDetails = container.createEl("details", { cls: "gz-detail-section" });
+	modelDetails.open = true; // 默认展开
+	const modelSummary = modelDetails.createEl("summary", { cls: "gz-detail-section-summary" });
 	const linkedModels = getLinkedModels(s.modelConfigs, provider.id);
-	modelHeader.createEl("span", { text: `模型 (${linkedModels.length})`, cls: "gz-detail-model-title" });
+	modelSummary.createEl("span", { text: `模型 (${linkedModels.length})` });
+
+	const modelSection = modelDetails.createDiv({ cls: "gz-detail-model-section" });
+	const modelHeader = modelSection.createDiv({ cls: "gz-detail-model-header" });
 
 	const modelActions = modelHeader.createDiv({ cls: "gz-detail-model-actions" });
 
@@ -269,7 +253,7 @@ function renderProviderDetail(
 		fetchPanel.style.display = "block";
 		fetchPanel.createDiv({ cls: "gz-detail-fetch-status", text: "正在获取模型列表..." });
 
-		const decryptedKey = await decryptKey(provider.apiKey);
+		const decryptedKey = resolveSecret(provider.apiKey);
 		const providerWithKey: Provider = { ...provider, apiKey: decryptedKey };
 		const result = await fetchAvailableModels(providerWithKey);
 

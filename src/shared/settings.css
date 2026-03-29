@@ -400,33 +400,6 @@
 	margin-bottom: 4px;
 }
 
-/* API Key input */
-.gz-apikey-input {
-	width: 100% !important;
-	min-width: 200px;
-	font-family: var(--font-monospace);
-	font-size: var(--font-ui-small);
-}
-
-.gz-apikey-toggle {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	background: transparent;
-	border: none;
-	cursor: pointer;
-	color: var(--text-muted);
-	padding: 4px;
-	margin-left: 4px;
-	border-radius: var(--radius-s);
-	flex-shrink: 0;
-}
-
-.gz-apikey-toggle:hover {
-	color: var(--text-normal);
-	background: var(--background-modifier-hover);
-}
-
 /* ============================================================
    Provider Split Panel (Left-Right Layout)
    ============================================================ */
@@ -604,22 +577,52 @@
 	margin: 0;
 }
 
-.gz-detail-save-btn {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 14px;
-	font-size: var(--font-ui-small);
-	border: none;
-	border-radius: var(--radius-s);
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	cursor: pointer;
-	transition: background 0.12s ease;
+/* Collapsible sections */
+.gz-detail-section {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	overflow: hidden;
+	margin: 8px 0;
 }
 
-.gz-detail-save-btn:hover {
-	background: var(--interactive-accent-hover);
+.gz-detail-section-summary {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+	cursor: pointer;
+	user-select: none;
+	background: var(--background-secondary-alt);
+	list-style: none;
+	border-bottom: 1px solid transparent;
+}
+
+.gz-detail-section[open] > .gz-detail-section-summary {
+	border-bottom-color: var(--background-modifier-border);
+}
+
+.gz-detail-section-summary::-webkit-details-marker {
+	display: none;
+}
+
+.gz-detail-section-summary::before {
+	content: "▶";
+	display: inline-block;
+	font-size: 10px;
+	color: var(--text-muted);
+	transition: transform 0.15s ease;
+	flex-shrink: 0;
+}
+
+.gz-detail-section[open] > .gz-detail-section-summary::before {
+	transform: rotate(90deg);
+}
+
+.gz-detail-section-summary:hover {
+	background: var(--background-modifier-hover);
 }
 
 /* Provider inline form */
@@ -981,35 +984,5 @@
    (kept from previous refactor)
    ============================================================ */
 
-/* API Key toggle */
-.gz-apikey-input {
-	width: 100% !important;
-	min-width: 200px;
-	font-family: var(--font-monospace);
-	font-size: var(--font-ui-small);
-}
 
-.gz-apikey-toggle {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	background: transparent;
-	border: none;
-	cursor: pointer;
-	color: var(--text-muted);
-	padding: 4px;
-	margin-left: 4px;
-	border-radius: var(--radius-s);
-	flex-shrink: 0;
-}
-
-.gz-apikey-toggle:hover {
-	color: var(--text-normal);
-	background: var(--background-modifier-hover);
-}
-
-.gz-apikey-toggle svg {
-	width: 16px;
-	height: 16px;
-}
 

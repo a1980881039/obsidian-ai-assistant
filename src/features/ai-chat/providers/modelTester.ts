@@ -7,7 +7,7 @@
 import { requestUrl } from "obsidian";
 import type { ModelConfig, Provider } from "../types";
 import { detectApiFormat } from "./modelCapabilities";
-import { decryptKey } from "./encryptionService";
+import { resolveSecret } from "./encryptionService";
 
 export interface TestResult {
 	ok: boolean;
@@ -26,7 +26,7 @@ export async function testModelConnection(
 	const start = Date.now();
 
 	try {
-		const apiKey = await decryptKey(provider.apiKey || mc.apiKey);
+		const apiKey = resolveSecret(provider.apiKey || mc.apiKey);
 		const baseUrl = (mc.baseUrl || provider.baseUrl).replace(/\/+$/, "");
 		const format = detectApiFormat(mc.model, mc.provider, "none");
 

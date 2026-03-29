@@ -2,7 +2,7 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { requestUrl } from "obsidian";
 import type { ToolDefInput } from "./ToolRegistry";
-import { decryptKey } from "../providers/encryptionService";
+import { resolveSecret } from "../providers/encryptionService";
 
 /**
  * Web 搜索工具 — Tavily API 为主，DuckDuckGo Lite HTML 解析为备选。
@@ -20,7 +20,7 @@ export function createWebSearchTool(getApiKey: () => string): ToolDefInput {
 		func: async ({ query, maxResults }: { query: string; maxResults?: number }) => {
 			const max = maxResults ?? 5;
 			const rawKey = getApiKey();
-			const apiKey = rawKey ? await decryptKey(rawKey) : "";
+			const apiKey = rawKey ? resolveSecret(rawKey) : "";
 
 			if (apiKey) {
 				return tavilySearch(query, apiKey, max);

@@ -1,11 +1,9 @@
-import { Notice, Setting } from "obsidian";
+import { Notice, SecretComponent, Setting } from "obsidian";
 import type SuperPlugin from "../../../main";
 import type { AIChatSettings } from "../types";
 import { EmbeddingProvider } from "../types";
 import { EMBEDDING_PROVIDER_CONFIGS } from "../embedding/embeddingProviderConfig";
-import { encryptKey, isEncrypted } from "../providers/encryptionService";
 import type { ChatManager } from "../core/ChatManager";
-import { makePasswordInput } from "./settingsUtils";
 
 export function renderQASettings(
 	el: HTMLElement,
@@ -44,16 +42,12 @@ export function renderQASettings(
 	new Setting(el)
 		.setName("嵌入 API Key")
 		.setDesc("嵌入模型使用的 API Key")
-		.addText((text) => {
-			const currentVal = s.embeddingApiKey || "";
-			const displayVal = isEncrypted(currentVal) ? "••••••••" : currentVal;
-			text.setPlaceholder("sk-...").setValue(displayVal).onChange(async (value) => {
-				if (value === "••••••••") return;
-				s.embeddingApiKey = value ? await encryptKey(value) : "";
+		.addComponent((c) => new SecretComponent(plugin.app, c)
+			.setValue(s.embeddingApiKey || "")
+			.onChange(async (value: string) => {
+				s.embeddingApiKey = value;
 				await plugin.saveSettings();
-			});
-			makePasswordInput(text.inputEl);
-		});
+			}));
 
 	new Setting(el)
 		.setName("排除路径")

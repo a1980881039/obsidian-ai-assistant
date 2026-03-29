@@ -1,9 +1,7 @@
-import { Setting } from "obsidian";
+import { SecretComponent, Setting } from "obsidian";
 import type SuperPlugin from "../../../main";
 import type { AIChatSettings } from "../types";
-import { encryptKey, isEncrypted } from "../providers/encryptionService";
 import type { ChatManager } from "../core/ChatManager";
-import { makePasswordInput } from "./settingsUtils";
 
 /** 工具中文显示名称与描述 */
 const TOOL_I18N: Record<string, { label: string; desc: string }> = {
@@ -36,16 +34,12 @@ export function renderAgentSettings(
 	new Setting(el)
 		.setName("Tavily API Key")
 		.setDesc("填写后「网络搜索」工具会使用 Tavily 搜索，效果更好。不填则自动用 DuckDuckGo。可在 tavily.com 免费申请（1000 次/月）")
-		.addText((text) => {
-			const currentVal = s.tavilyApiKey || "";
-			const displayVal = isEncrypted(currentVal) ? "••••••••" : currentVal;
-			text.setPlaceholder("tvly-...").setValue(displayVal).onChange(async (value) => {
-				if (value === "••••••••") return;
-				s.tavilyApiKey = value ? await encryptKey(value) : "";
+		.addComponent((c) => new SecretComponent(plugin.app, c)
+			.setValue(s.tavilyApiKey || "")
+			.onChange(async (value: string) => {
+				s.tavilyApiKey = value;
 				await plugin.saveSettings();
-			});
-			makePasswordInput(text.inputEl);
-		});
+			}));
 
 	new Setting(el)
 		.setName("最大迭代次数")
